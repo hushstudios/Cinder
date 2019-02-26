@@ -676,6 +676,55 @@ void WindowImplMsw::onTouch( HWND hWnd, WPARAM wParam, LPARAM lParam )
     }
 }
 
+void WindowImplMsw::onGesture( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+{
+    // pull these symbols dynamically out of the user32.dll
+    static BOOL( WINAPI * GetGestureInfo )( HGESTUREINFO, GESTUREINFO * ) = nullptr;
+    if( !GetGestureInfo )
+        *(size_t *)&GetGestureInfo = ( size_t )::GetProcAddress(::GetModuleHandle( TEXT( "user32.dll" ) ), "GetGestureInfo" );
+
+    GESTUREINFO gi;
+    ZeroMemory( &gi, sizeof( GESTUREINFO ) );
+    gi.cbSize = sizeof( GESTUREINFO );
+
+    bool result = GetGestureInfo( (HGESTUREINFO)lParam, &gi );
+    bool handled = false;
+
+    if( result ) {
+        switch( gi.dwID ) {
+        case GID_ZOOM:
+            console() << "Zoom gesture detected." << std::endl;
+            handled = true;
+            break;
+        case GID_PAN:
+            console() << "Pan gesture detected." << std::endl;
+            handled = true;
+            break;
+        case GID_ROTATE:
+            console() << "Rotate gesture detected." << std::endl;
+            handled = true;
+            break;
+        case GID_TWOFINGERTAP:
+            console() << "Two finger tap gesture detected." << std::endl;
+            handled = true;
+            break;
+        case GID_PRESSANDTAP:
+            console() << "Press and tap gesture detected." << std::endl;
+            handled = true;
+            break;
+        default:
+            break;
+        }
+    }
+    else {
+		// for now we'll just ignore an error
+    }
+    if( ! handled ) {
+        // if we didn't handle the message, let DefWindowProc handle it
+        ::DefWindowProc( hWnd, uMsg, wParam, lParam );
+    }
+}
+
 unsigned int prepMouseEventModifiers( WPARAM wParam )
 {
 	unsigned int result = 0;
@@ -977,6 +1026,9 @@ LRESULT CALLBACK WndProc(	HWND	mWnd,			// Handle For This Window
 			if( impl->getAppImpl()->setupHasBeenCalled() )
 				impl->draw();
 		break;
+		case WM_GESTURE:
+            impl->onGesture( mWnd, uMsg, wParam, lParam );
+        break;
 		case WM_TOUCH:
 			impl->onTouch( mWnd, wParam, lParam );
 		break;

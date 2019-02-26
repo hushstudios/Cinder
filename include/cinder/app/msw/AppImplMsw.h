@@ -155,6 +155,7 @@ class WindowImplMsw {
 	static void		registerWindowClass();
 	void			getScreenSize( int clientWidth, int clientHeight, int *resultWidth, int *resultHeight );
 	void			onTouch( HWND hWnd, WPARAM wParam, LPARAM lParam );
+	void			onGesture( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 	virtual void	toggleFullScreen( const app::FullScreenOptions &options );
 
 	AppImplMsw				*mAppImpl;
