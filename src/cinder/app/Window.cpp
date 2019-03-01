@@ -310,6 +310,36 @@ void Window::emitDisplayChange()
 {
 	getRenderer()->makeCurrentContext( true );
 	mSignalDisplayChange.emit();
+} 
+
+void Window::emitGestureBegin( GestureEvent *event )
+{
+	getRenderer()->makeCurrentContext( true );
+
+	CollectorEvent<GestureEvent> collector( event );
+	mSignalGestureBegin.emit( collector, *event );
+	if( ! event->isHandled() )
+		getApp()->gestureBegin( *event );
+}
+
+void Window::emitGestureUpdate( GestureEvent *event )
+{
+	getRenderer()->makeCurrentContext( true );
+
+	CollectorEvent<GestureEvent> collector( event );
+	mSignalGestureUpdate.emit( collector, *event );
+	if( ! event->isHandled() )
+		getApp()->gestureUpdate( *event );
+}
+
+void Window::emitGestureEnd( GestureEvent *event )
+{
+	getRenderer()->makeCurrentContext( true );
+
+	CollectorEvent<GestureEvent> collector( event );
+	mSignalGestureEnd.emit( collector, *event );
+	if( ! event->isHandled() )
+		getApp()->gestureEnd( *event );
 }
 
 void Window::emitMouseDown( MouseEvent *event )

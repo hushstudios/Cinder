@@ -30,6 +30,7 @@
 #include "cinder/Vector.h"
 #include "cinder/Signals.h"
 #include "cinder/Rect.h"
+#include "cinder/app/GestureEvent.h"
 #include "cinder/app/MouseEvent.h"
 #include "cinder/app/TouchEvent.h"
 #include "cinder/app/KeyEvent.h"
@@ -103,6 +104,7 @@ typedef std::shared_ptr<Window>		WindowRef;
 
 namespace cinder { namespace app {
 
+typedef	 signals::Signal<void( GestureEvent & ),	CollectorEvent<GestureEvent> >		EventSignalGesture;
 typedef	 signals::Signal<void( MouseEvent & ),		CollectorEvent<MouseEvent> >		EventSignalMouse;
 typedef	 signals::Signal<void( TouchEvent & ),		CollectorEvent<TouchEvent> >		EventSignalTouch;
 typedef	 signals::Signal<void( KeyEvent & ),		CollectorEvent<KeyEvent> >			EventSignalKey;
@@ -364,6 +366,15 @@ class CI_API Window : public std::enable_shared_from_this<Window> {
 	HDC				getDc() const { return getRenderer()->getDc(); }
 #endif
 
+	EventSignalGesture& getSignalGestureBegin() { return mSignalGestureBegin; }
+	void				emitGestureBegin( GestureEvent *event );
+
+	EventSignalGesture& getSignalGestureUpdate() { return mSignalGestureUpdate; }
+	void				emitGestureUpdate( GestureEvent *event );
+
+	EventSignalGesture& getSignalGestureEnd() { return mSignalGestureEnd; }
+	void				emitGestureEnd( GestureEvent *event );
+
 	EventSignalMouse&	getSignalMouseDown() { return mSignalMouseDown; }
 	void				emitMouseDown( MouseEvent *event );
 
@@ -487,7 +498,8 @@ class CI_API Window : public std::enable_shared_from_this<Window> {
 	AppBase							*mApp;
 	bool						mValid;
 	std::shared_ptr<void>		mUserData;
-	
+
+	EventSignalGesture		mSignalGestureBegin, mSignalGestureUpdate, mSignalGestureEnd;
 	EventSignalMouse		mSignalMouseDown, mSignalMouseDrag, mSignalMouseUp, mSignalMouseWheel, mSignalMouseMove;
 	EventSignalTouch		mSignalTouchesBegan, mSignalTouchesMoved, mSignalTouchesEnded;
 	EventSignalKey			mSignalKeyDown, mSignalKeyUp;

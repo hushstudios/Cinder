@@ -2237,5 +2237,8 @@
     <ClInclude Include="..\..\include\cinder\FileWatcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\cinder\app\GestureEvent.h">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

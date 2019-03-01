@@ -208,6 +208,13 @@ class CI_API AppBase {
 	//! Override to perform any rendering once-per-loop or in response to OS-prompted requests for refreshes.
 	virtual void	draw() {}
 	
+	//! Override to receive gesture-begin events.
+	virtual void	gestureBegin( GestureEvent event ) {}
+	//! Override to receive gesture-update events.
+	virtual void	gestureUpdate( GestureEvent event ) {}
+	//! Override to receive gesture-end events.
+	virtual void	gestureEnd( GestureEvent event ) {}
+	
 	//! Override to receive mouse-down events.
 	virtual void	mouseDown( MouseEvent event ) {}
 	//! Override to receive mouse-up events.

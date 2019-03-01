@@ -1020,6 +1020,7 @@
     <ClInclude Include="..\..\include\cinder\app\AppScreenSaver.h" />
     <ClInclude Include="..\..\include\cinder\app\Event.h" />
     <ClInclude Include="..\..\include\cinder\app\FileDropEvent.h" />
+    <ClInclude Include="..\..\include\cinder\app\GestureEvent.h" />
     <ClInclude Include="..\..\include\cinder\app\KeyEvent.h" />
     <ClInclude Include="..\..\include\cinder\app\MouseEvent.h" />
     <ClInclude Include="..\..\include\cinder\app\msw\AppImplMsw.h" />

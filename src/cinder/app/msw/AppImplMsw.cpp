@@ -692,25 +692,61 @@ void WindowImplMsw::onGesture( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
     if( result ) {
         switch( gi.dwID ) {
+        case GID_BEGIN:
+            console() << "Begin gesture detected." << std::endl;
+            handled = false; // Application behavior is undefined when the GID_BEGIN and GID_END messages are consumed by a third-party application.
+            {
+                GestureEvent event( getWindow() );
+                getWindow()->emitGestureBegin( &event );
+            }
+            break;
+        case GID_END:
+            console() << "End gesture detected." << std::endl;
+            handled = false; // Application behavior is undefined when the GID_BEGIN and GID_END messages are consumed by a third-party application.
+            {
+                GestureEvent event( getWindow() );
+                getWindow()->emitGestureEnd( &event );
+            }
+            break;
         case GID_ZOOM:
             console() << "Zoom gesture detected." << std::endl;
             handled = true;
+            {
+                GestureEvent event( getWindow() );
+                getWindow()->emitGestureUpdate( &event );
+            }
             break;
         case GID_PAN:
             console() << "Pan gesture detected." << std::endl;
             handled = true;
+            {
+                GestureEvent event( getWindow() );
+                getWindow()->emitGestureUpdate( &event );
+            }
             break;
         case GID_ROTATE:
             console() << "Rotate gesture detected." << std::endl;
             handled = true;
+            {
+                GestureEvent event( getWindow() );
+                getWindow()->emitGestureUpdate( &event );
+            }
             break;
         case GID_TWOFINGERTAP:
             console() << "Two finger tap gesture detected." << std::endl;
             handled = true;
+            {
+                GestureEvent event( getWindow() );
+                getWindow()->emitGestureUpdate( &event );
+            }
             break;
         case GID_PRESSANDTAP:
             console() << "Press and tap gesture detected." << std::endl;
             handled = true;
+            {
+                GestureEvent event( getWindow() );
+                getWindow()->emitGestureUpdate( &event );
+            }
             break;
         default:
             break;

@@ -25,6 +25,7 @@
 
 #include "cinder/Stream.h"
 #include "cinder/Vector.h"
+#include "cinder/app/GestureEvent.h"
 #include "cinder/app/MouseEvent.h"
 #include "cinder/app/KeyEvent.h"
 #include "cinder/app/TouchEvent.h"
