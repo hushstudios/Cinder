@@ -366,14 +366,14 @@ class CI_API Window : public std::enable_shared_from_this<Window> {
 	HDC				getDc() const { return getRenderer()->getDc(); }
 #endif
 
-	EventSignalGesture& getSignalGestureBegin() { return mSignalGestureBegin; }
-	void				emitGestureBegin( GestureEvent *event );
+	EventSignalGesture& getSignalGesturePan() { return mSignalGesturePan; }
+	void				emitGesturePan( GestureEvent *event );
 
-	EventSignalGesture& getSignalGestureUpdate() { return mSignalGestureUpdate; }
-	void				emitGestureUpdate( GestureEvent *event );
+	EventSignalGesture& getSignalGestureRotate() { return mSignalGestureRotate; }
+	void				emitGestureRotate( GestureEvent *event );
 
-	EventSignalGesture& getSignalGestureEnd() { return mSignalGestureEnd; }
-	void				emitGestureEnd( GestureEvent *event );
+	EventSignalGesture& getSignalGestureZoom() { return mSignalGestureZoom; }
+	void				emitGestureZoom( GestureEvent *event );
 
 	EventSignalMouse&	getSignalMouseDown() { return mSignalMouseDown; }
 	void				emitMouseDown( MouseEvent *event );
@@ -499,7 +499,7 @@ class CI_API Window : public std::enable_shared_from_this<Window> {
 	bool						mValid;
 	std::shared_ptr<void>		mUserData;
 
-	EventSignalGesture		mSignalGestureBegin, mSignalGestureUpdate, mSignalGestureEnd;
+	EventSignalGesture		mSignalGesturePan, mSignalGestureRotate, mSignalGestureZoom;
 	EventSignalMouse		mSignalMouseDown, mSignalMouseDrag, mSignalMouseUp, mSignalMouseWheel, mSignalMouseMove;
 	EventSignalTouch		mSignalTouchesBegan, mSignalTouchesMoved, mSignalTouchesEnded;
 	EventSignalKey			mSignalKeyDown, mSignalKeyUp;

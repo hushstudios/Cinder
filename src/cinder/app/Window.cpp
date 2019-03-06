@@ -312,34 +312,34 @@ void Window::emitDisplayChange()
 	mSignalDisplayChange.emit();
 } 
 
-void Window::emitGestureBegin( GestureEvent *event )
+void Window::emitGesturePan( GestureEvent *event )
 {
 	getRenderer()->makeCurrentContext( true );
 
 	CollectorEvent<GestureEvent> collector( event );
-	mSignalGestureBegin.emit( collector, *event );
+	mSignalGesturePan.emit( collector, *event );
 	if( ! event->isHandled() )
-		getApp()->gestureBegin( *event );
+		getApp()->gesturePan( *event );
 }
 
-void Window::emitGestureUpdate( GestureEvent *event )
+void Window::emitGestureRotate( GestureEvent *event )
 {
 	getRenderer()->makeCurrentContext( true );
 
 	CollectorEvent<GestureEvent> collector( event );
-	mSignalGestureUpdate.emit( collector, *event );
+	mSignalGestureRotate.emit( collector, *event );
 	if( ! event->isHandled() )
-		getApp()->gestureUpdate( *event );
+		getApp()->gestureRotate( *event );
 }
 
-void Window::emitGestureEnd( GestureEvent *event )
+void Window::emitGestureZoom( GestureEvent *event )
 {
 	getRenderer()->makeCurrentContext( true );
 
 	CollectorEvent<GestureEvent> collector( event );
-	mSignalGestureEnd.emit( collector, *event );
+	mSignalGestureZoom.emit( collector, *event );
 	if( ! event->isHandled() )
-		getApp()->gestureEnd( *event );
+		getApp()->gestureZoom( *event );
 }
 
 void Window::emitMouseDown( MouseEvent *event )

@@ -42,6 +42,9 @@
 #undef min
 #undef max
 #pragma comment(lib, "gdiplus")
+#include <intsafe.h>
+#include <tchar.h>
+#include <tpcshrd.h>
 
 using std::string;
 using std::wstring;
@@ -412,6 +415,22 @@ void WindowImplMsw::createWindow( const ivec2 &windowSize, const std::string &ti
 		::SetWindowPos( mWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
 	}
 
+	// register for specific gestures
+	GESTURECONFIG gc[] = {
+		{ GID_PAN, GC_PAN_WITH_SINGLE_FINGER_VERTICALLY | GC_PAN_WITH_SINGLE_FINGER_HORIZONTALLY | GC_PAN_WITH_INERTIA, GC_PAN_WITH_GUTTER }, //
+		{ GID_ZOOM, GC_ZOOM, 0 },                                                                                                             //
+		{ GID_ROTATE, GC_ROTATE, 0 }                                                                                                          //
+	};
+
+	::SetGestureConfig( mWnd, 0, 3, gc, sizeof( GESTURECONFIG ) );
+
+	const DWORD_PTR dwTabletProperty = TABLET_DISABLE_PRESSANDHOLD | // disables press and hold (right-click) gesture
+		TABLET_DISABLE_PENTAPFEEDBACK |                              // disables UI feedback on pen up (waves)
+		TABLET_DISABLE_PENBARRELFEEDBACK |                           // disables UI feedback on pen button down (circle)
+		TABLET_DISABLE_FLICKS;                                       // disables pen flicks (back, forward, drag down, drag up)
+
+	::SetProp( mWnd, MICROSOFT_TABLETPENSERVICE_PROPERTY, reinterpret_cast<HANDLE>( dwTabletProperty ) );
+
 	// update display
 	mDisplay = PlatformMsw::get()->findDisplayFromHmonitor( ::MonitorFromWindow( mWnd, MONITOR_DEFAULTTONEAREST ) );
 
@@ -678,87 +697,100 @@ void WindowImplMsw::onTouch( HWND hWnd, WPARAM wParam, LPARAM lParam )
 
 void WindowImplMsw::onGesture( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-    // pull these symbols dynamically out of the user32.dll
-    static BOOL( WINAPI * GetGestureInfo )( HGESTUREINFO, GESTUREINFO * ) = nullptr;
-    if( !GetGestureInfo )
-        *(size_t *)&GetGestureInfo = ( size_t )::GetProcAddress(::GetModuleHandle( TEXT( "user32.dll" ) ), "GetGestureInfo" );
+	// pull these symbols dynamically out of the user32.dll
+	static BOOL( WINAPI * GetGestureInfo )( HGESTUREINFO, GESTUREINFO * ) = nullptr;
+	if( !GetGestureInfo )
+		*(size_t *)&GetGestureInfo = ( size_t )::GetProcAddress(::GetModuleHandle( TEXT( "user32.dll" ) ), "GetGestureInfo" );
 
-    GESTUREINFO gi;
-    ZeroMemory( &gi, sizeof( GESTUREINFO ) );
-    gi.cbSize = sizeof( GESTUREINFO );
+	GESTUREINFO gi;
+	ZeroMemory( &gi, sizeof( GESTUREINFO ) );
+	gi.cbSize = sizeof( GESTUREINFO );
 
-    bool result = GetGestureInfo( (HGESTUREINFO)lParam, &gi );
-    bool handled = false;
+	bool result = GetGestureInfo( (HGESTUREINFO)lParam, &gi );
+	bool handled = false;
 
-    if( result ) {
-        switch( gi.dwID ) {
-        case GID_BEGIN:
-            console() << "Begin gesture detected." << std::endl;
-            handled = false; // Application behavior is undefined when the GID_BEGIN and GID_END messages are consumed by a third-party application.
-            {
-                GestureEvent event( getWindow() );
-                getWindow()->emitGestureBegin( &event );
-            }
-            break;
-        case GID_END:
-            console() << "End gesture detected." << std::endl;
-            handled = false; // Application behavior is undefined when the GID_BEGIN and GID_END messages are consumed by a third-party application.
-            {
-                GestureEvent event( getWindow() );
-                getWindow()->emitGestureEnd( &event );
-            }
-            break;
-        case GID_ZOOM:
-            console() << "Zoom gesture detected." << std::endl;
-            handled = true;
-            {
-                GestureEvent event( getWindow() );
-                getWindow()->emitGestureUpdate( &event );
-            }
-            break;
-        case GID_PAN:
-            console() << "Pan gesture detected." << std::endl;
-            handled = true;
-            {
-                GestureEvent event( getWindow() );
-                getWindow()->emitGestureUpdate( &event );
-            }
-            break;
-        case GID_ROTATE:
-            console() << "Rotate gesture detected." << std::endl;
-            handled = true;
-            {
-                GestureEvent event( getWindow() );
-                getWindow()->emitGestureUpdate( &event );
-            }
-            break;
-        case GID_TWOFINGERTAP:
-            console() << "Two finger tap gesture detected." << std::endl;
-            handled = true;
-            {
-                GestureEvent event( getWindow() );
-                getWindow()->emitGestureUpdate( &event );
-            }
-            break;
-        case GID_PRESSANDTAP:
-            console() << "Press and tap gesture detected." << std::endl;
-            handled = true;
-            {
-                GestureEvent event( getWindow() );
-                getWindow()->emitGestureUpdate( &event );
-            }
-            break;
-        default:
-            break;
-        }
-    }
-    else {
+	if( gi.dwFlags & GF_BEGIN ) {
+		mGestureArguments = gi.ullArguments;
+		mGestureFirst.x = gi.ptsLocation.x - getWindow()->getPos().x;
+		mGestureFirst.y = gi.ptsLocation.y - getWindow()->getPos().y;
+	}
+
+	if( result ) {
+		switch( gi.dwID ) {
+		case GID_ZOOM:
+			console() << "Zoom gesture detected." << std::endl;
+			handled = true;
+			{
+				const auto p = ivec2( gi.ptsLocation.x - getWindow()->getPos().x, gi.ptsLocation.y - getWindow()->getPos().y );
+				const auto c = ( p + mGestureFirst ) / 2;
+				const auto z = float( LODWORD( gi.ullArguments ) ) / float( LODWORD( mGestureArguments ) );
+				const auto m = translate( scale( translate( mat3(), vec2( -c ) ), vec2( z ) ), vec2( c ) );
+
+				GestureZoomEvent event( getWindow(), c, z, gi.dwFlags );
+				getWindow()->emitGestureZoom( &event );
+
+				mGestureFirst = p;
+			}
+			break;
+		case GID_PAN:
+			console() << "Pan gesture detected" << ( gi.dwFlags & GF_INERTIA ? " (with inertia)" : "" ) << "." << std::endl;
+			handled = true;
+			{
+				const auto i = ivec2( LOWORD( HIDWORD( gi.ullArguments ) ), HIWORD( HIDWORD( gi.ullArguments ) ) );             // inertia
+				const auto p = ivec2( gi.ptsLocation.x - getWindow()->getPos().x, gi.ptsLocation.y - getWindow()->getPos().y ); // position
+				const auto v = p - mGestureFirst;                                                                               // velocity
+
+				console() << "V:" << v << " i:" << i << std::endl;
+
+				GesturePanEvent event( getWindow(), p, i, gi.dwFlags );
+				getWindow()->emitGesturePan( &event );
+
+				mGestureFirst = p;
+			}
+			break;
+		case GID_ROTATE:
+			console() << "Rotate gesture detected." << std::endl;
+			handled = true;
+			{
+				const auto c = ivec2( gi.ptsLocation.x - getWindow()->getPos().x, gi.ptsLocation.y - getWindow()->getPos().y );
+				const auto a = float( -GID_ROTATE_ANGLE_FROM_ARGUMENT( gi.ullArguments ) );
+
+				GestureRotateEvent event( getWindow(), c, a, gi.dwFlags );
+				getWindow()->emitGestureRotate( &event );
+			}
+			break;
+		// case GID_TWOFINGERTAP:
+		//    console() << "Two finger tap gesture detected." << std::endl;
+		//    handled = true;
+		//    {
+		//        GestureUpdateEvent event( getWindow(), GestureEvent::GESTURE_UNKNOWN, mGestureFirst );
+		//        getWindow()->emitGestureUpdate( &event );
+		//    }
+		//    break;
+		// case GID_PRESSANDTAP:
+		//    console() << "Press and tap gesture detected." << std::endl;
+		//    handled = true;
+		//    {
+		//        GestureUpdateEvent event( getWindow(), GestureEvent::GESTURE_UNKNOWN, mGestureFirst );
+		//        getWindow()->emitGestureUpdate( &event );
+		//    }
+		//    break;
+		default:
+			handled = false;
+			break;
+		}
+	}
+	else {
 		// for now we'll just ignore an error
-    }
-    if( ! handled ) {
-        // if we didn't handle the message, let DefWindowProc handle it
-        ::DefWindowProc( hWnd, uMsg, wParam, lParam );
-    }
+	}
+
+	if( handled ) {
+		::CloseGestureInfoHandle( (HGESTUREINFO)lParam );
+	}
+	else {
+		// if we didn't handle the message, let DefWindowProc handle it
+		::DefWindowProc( hWnd, uMsg, wParam, lParam );
+	}
 }
 
 unsigned int prepMouseEventModifiers( WPARAM wParam )
@@ -1063,8 +1095,8 @@ LRESULT CALLBACK WndProc(	HWND	mWnd,			// Handle For This Window
 				impl->draw();
 		break;
 		case WM_GESTURE:
-            impl->onGesture( mWnd, uMsg, wParam, lParam );
-        break;
+			impl->onGesture( mWnd, uMsg, wParam, lParam );
+		break;
 		case WM_TOUCH:
 			impl->onTouch( mWnd, wParam, lParam );
 		break;

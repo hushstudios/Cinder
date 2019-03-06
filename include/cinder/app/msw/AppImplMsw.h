@@ -174,6 +174,8 @@ class WindowImplMsw {
 	std::map<DWORD,vec2>			mMultiTouchPrev;
 	std::vector<TouchEvent::Touch>	mActiveTouches;
 	bool					mIsDragging;
+	ULONGLONG				mGestureArguments;
+	ivec2					mGestureFirst;
 
 	friend AppImplMsw;
 	friend LRESULT CALLBACK WndProc( HWND, UINT, WPARAM, LPARAM );
