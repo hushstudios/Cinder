@@ -23,6 +23,8 @@
 #pragma once
 
 #include "cinder/Cinder.h"
+#include <deque>
+#include <mutex>
 
 #define DEFAULT_COMPRESSION_LEVEL 6
 
@@ -77,6 +79,39 @@ class CI_API Buffer {
 	size_t	mAllocatedSize;
 	size_t	mDataSize;
 	bool	mOwnsData;
+};
+
+class CI_API StreamingBuffer {
+  public:
+	StreamingBuffer( size_t blockSizeBytes = 65536 );
+	StreamingBuffer( const StreamingBuffer &rhs ) = delete;
+	StreamingBuffer( StreamingBuffer &&rhs ) = delete;
+
+	void	pushFront( const void *data, size_t sizeBytes );
+	size_t	popBack( void *output, size_t maxSize );
+
+	size_t	getSize() const;
+
+	bool 	empty() const { return getSize() == 0; }
+	void	clear();
+	void	shrinkToFit();
+
+	//! Performs a non-destructive copy to \a output, up to \a maxSize bytes. Does not pop any data. Returns number of bytes written
+	size_t	copyTo( void *output, size_t maxSize ) const;
+
+	StreamingBuffer&	operator=( const StreamingBuffer &rhs ) = delete;
+	StreamingBuffer&	operator=( StreamingBuffer &&rhs ) = delete;
+
+  private:
+	void	allocateNewWriteBlock();
+	void	releaseCurrentReadBlock();
+	size_t	calcSize() const;
+
+	std::deque<std::unique_ptr<uint8_t[]>>		mBlocks, mUnusedBlocks;
+
+	mutable std::mutex					mMutex;
+	const size_t						mBlockSize;
+	size_t								mWriteOffset, mReadOffset; // expressed in bytes
 };
 
 CI_API Buffer compressBuffer( const Buffer &buffer, int8_t compressionLevel = DEFAULT_COMPRESSION_LEVEL, bool resizeResult = true );
